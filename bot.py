@@ -3,6 +3,9 @@ import os
 import praw
 import re
 
+from helpers import get_random_date
+from price import Price
+
 class Bot:
   def __init__(self):
     self.client_id = os.getenv("CLIENT_ID")
@@ -35,21 +38,27 @@ class Bot:
           "with_number": found_number.group()
         }
 
+  def get_price_comparison(self, amount):
+    date = get_random_date()
+    price = Price().get_price_at_date(date)
+
+    return float(amount) / price["price"]
+
   def run(self):
     subreddit = self.scan_subreddit(self.get_client(), "bitcoin")
     submission = subreddit.random()
+    past_date = get_random_date()
 
     reply_to_comment = self.search_re_in_post_comments(submission, r'(\d[.,]*)+[km]*')
 
     if reply_to_comment:
-      print("Sailor found number '{}' in comment '{}'".format(
+      print("With USD${} you would've bought: {}".format(
         reply_to_comment["with_number"],
-        reply_to_comment["content"]
+        self.get_price_comparison(reply_to_comment["with_number"])
       ))
       # submission.reply(bot_phrase)
       return
-    print("Didn't found numbers")
-
+    print("Didn't find numbers")
 
 bot = Bot()
 bot.run()
