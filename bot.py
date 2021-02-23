@@ -5,11 +5,11 @@ import re
 
 class Bot:
   def __init__(self):
-    self.client_id = "w-ujp6nymni8oA"
-    self.client_secret = "CQ7yAx9S-8X8VDrZ0eHLiQ9zsLHswQ"
-    self.password ="sf2^5Z7$Zn"
-    self.user_agent = "PriceToCrypto"
-    self.username = "shite_or_bitcoin"
+    self.client_id = os.getenv("CLIENT_ID")
+    self.client_secret = os.getenv("CLIENT_SECRET")
+    self.password = os.getenv("USER_PASSWORD")
+    self.user_agent = os.getenv("APP_USERAGENT")
+    self.username = os.getenv("USER_USERNAME")
 
   def get_client(self):
     return praw.Reddit(
@@ -27,21 +27,28 @@ class Bot:
     matching_comment = None
 
     for comment in post.comments:
-      has_number = re.search(reg_exp, comment.body)
-      if has_number:
+      found_number = re.search(reg_exp, comment.body)
+      if found_number:
         matching_comment = comment.body
-
-    return matching_comment
+        return {
+          "content": comment.body,
+          "with_number": found_number.group()
+        }
 
   def run(self):
-    client = self.get_client()
-    subreddit = self.scan_subreddit(client, "bitcoin")
+    subreddit = self.scan_subreddit(self.get_client(), "bitcoin")
     submission = subreddit.random()
+
     reply_to_comment = self.search_re_in_post_comments(submission, r'(\d[.,]*)+[km]*')
 
     if reply_to_comment:
-      print("Bot found comment:", reply_to_comment)
+      print("Sailor found number '{}' in comment '{}'".format(
+        reply_to_comment["with_number"],
+        reply_to_comment["content"]
+      ))
       # submission.reply(bot_phrase)
+      return
+    print("Didn't found numbers")
 
 
 bot = Bot()
